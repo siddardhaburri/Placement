@@ -1,0 +1,50 @@
+import { createClient } from '@supabase/supabase-js'
+
+const DEFAULT_SUPABASE_URL = 'https://sfmozhbkykvqjvgsyszj.supabase.co'
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_YUjNObG4z1OKUayHWzbjTQ_hedvLoyR'
+
+const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+const envAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+
+export const supabaseUrl = (envUrl && !envUrl.includes('your-project') && !envUrl.includes('placeholder'))
+  ? envUrl
+  : DEFAULT_SUPABASE_URL
+
+export const supabaseAnonKey = (envAnonKey && !envAnonKey.includes('your-supabase') && !envAnonKey.includes('placeholder'))
+  ? envAnonKey
+  : DEFAULT_SUPABASE_ANON_KEY
+
+// Configuration check: true when valid project credentials are provided
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl &&
+  supabaseAnonKey &&
+  !supabaseUrl.includes('your-project') &&
+  !supabaseUrl.includes('placeholder') &&
+  !supabaseAnonKey.includes('your-supabase') &&
+  !supabaseAnonKey.includes('placeholder')
+)
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: 'pkce',
+    detectSessionInUrl: true,
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+})
+
+export async function signOutCompletely() {
+  if (isSupabaseConfigured) {
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.error('Supabase signout error:', e)
+    }
+  }
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('placement_ops_token')
+    localStorage.removeItem('placement_ops_user')
+    localStorage.removeItem('placement_ops_demo_user')
+    localStorage.removeItem('placement_ops_oauth_role')
+  }
+}
